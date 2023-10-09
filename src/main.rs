@@ -48,16 +48,19 @@ fn read_settings() -> Result<Settings, Box<dyn Error>> {
     Ok(settings)
 }
 
-async fn fetch_news(urls: &[&str]) -> Vec<(String, Entry)> {
+async fn fetch_news(urls: &[&str]) -> Option<Vec<(String, Entry)>> {
     let client = Client::new();
-    let responses: Vec<Response> = join_all(
-        urls.iter()
-            .map(|url| client.get(*url).header("User-Agent", "gluon_news").send()),
-    )
-    .await
-    .into_iter()
-    .filter_map(|r| r.ok())
-    .collect();
+    let mut tasks = Vec::new();
+    for url in urls {
+        tasks.push(tokio::task::spawn(
+            client.get(*url).header("User-Agent", "gluon_news").send(),
+        ));
+    }
+    let mut outputs = Vec::new();
+    for task in tasks {
+        outputs.push(task.await.unwrap());
+    }
+    let responses: Vec<Response> = outputs.into_iter().filter_map(|r| r.ok()).collect();
     let texts: Vec<String> = join_all(responses.into_iter().map(|r| r.text()))
         .await
         .into_iter()
@@ -79,13 +82,17 @@ async fn fetch_news(urls: &[&str]) -> Vec<(String, Entry)> {
         }
     }
 
+    if entries.is_empty() {
+        return None;
+    }
+
     entries.sort_by(|a, b| {
         b.1.published
             .unwrap_or_default()
             .cmp(&a.1.published.unwrap_or_default())
     });
 
-    entries
+    Some(entries)
 }
 
 fn Entry(cx: Scope<EntryProps>) -> Element {
@@ -113,7 +120,8 @@ fn Entry(cx: Scope<EntryProps>) -> Element {
 }
 
 fn App(cx: Scope) -> Element {
-    let future = use_future(cx, (), |_| async move {
+    let mut count = use_state(cx, || 0);
+    let future = use_future(cx, (count,), |_| async move {
         let feeds: Vec<&str> = SETTINGS.feeds.iter().map(|f| f.as_str()).collect();
 
         fetch_news(&feeds).await
@@ -123,27 +131,41 @@ fn App(cx: Scope) -> Element {
         Some(response) => rsx! {
             style { include_str!("../style.css") }
 
-            ul {
-                for e in response {
-                    li {
-                        Entry {
-                            title: match e.1.title.clone() {
-                                Some(title) => title.content,
-                                None => String::from("N/A"),
-                            },
-                            summary: match e.1.summary.clone() {
-                                Some(summary) => summary.content.replace("href", ""),
-                                None => String::from("N/A"),
-                            },
-                            link: match e.1.links.get(0) {
-                                Some(link) => link.href.clone(),
-                                None => String::from("N/A"),
-                            },
-                            category: e.0.chars().take(100).collect::<String>(),
-                            published: e.1.published.unwrap_or_default(),
+            match response {
+                Some(feeds) => rsx! {
+                    ul {
+                        li {
+                            button {onclick: move |_| {count += 1}, "Refresh"}
+                        }
+                        for e in feeds {
+                            li {
+                                Entry {
+                                    title: match e.1.title.clone() {
+                                        Some(title) => title.content,
+                                        None => String::from("N/A"),
+                                    },
+                                    summary: match e.1.summary.clone() {
+                                        Some(summary) => summary.content.replace("href", ""),
+                                        None => String::from("N/A"),
+                                    },
+                                    link: match e.1.links.get(0) {
+                                        Some(link) => link.href.clone(),
+                                        None => String::from("N/A"),
+                                    },
+                                    category: e.0.chars().take(100).collect::<String>(),
+                                    published: e.1.published.unwrap_or_default(),
+                                }
+                            }
                         }
                     }
-                }
+                },
+                None => rsx! {
+                    ul {
+                        li {
+                            div {"Could not fetch any news. Make sure you have a valid settings.json file."}
+                        }
+                    }
+                },
             }
         },
         None => rsx! { div { "Loading..." } },
