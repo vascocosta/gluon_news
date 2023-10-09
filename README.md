@@ -1,3 +1,3 @@
 # Gluon News
 
-A simple graphical feed reader written in Rust.
+A simple graphical news aggregator written in Rust.
