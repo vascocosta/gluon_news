@@ -1,0 +1,49 @@
+body {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 1.3em;
+    background-color: rgb(32, 32, 32);
+    color: rgb(136, 136, 136);
+}
+
+a:link {
+    color: rgb(157, 212, 255);
+    text-decoration: none;
+}
+
+a:visited {
+    color: rgb(157, 212, 255);
+    text-decoration: none;
+}
+
+a:hover {
+    color: rgb(107, 191, 255);
+    text-decoration: none;
+}
+
+a:active {
+    color: rgb(107, 191, 255);
+    text-decoration: none;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    background: #3a3a3a;
+    margin: 10px;
+    padding: 10px;
+    border: 2px solid #000000;
+    border-radius: 10px;
+}
+
+hr {
+    border-top: 1px dashed #555555;
+    border-bottom: none;
+}
+
+.summary {
+    color: rgb(192, 197, 200);
+}
