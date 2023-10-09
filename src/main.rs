@@ -50,17 +50,6 @@ fn read_settings() -> Result<Settings, Box<dyn Error>> {
 
 async fn fetch_news(urls: &[&str]) -> Vec<(String, Entry)> {
     let client = Client::new();
-    // let mut tasks = Vec::new();
-    // for url in urls {
-    //     tasks.push(tokio::task::spawn(
-    //         client.get(*url).header("User-Agent", "gluon_news").send(),
-    //     ));
-    // }
-    // let mut outputs = Vec::new();
-    // for task in tasks {
-    //     outputs.push(task.await.unwrap());
-    // }
-    // let responses: Vec<Response> = outputs.into_iter().filter_map(|r| r.ok()).collect();
     let responses: Vec<Response> = join_all(
         urls.iter()
             .map(|url| client.get(*url).header("User-Agent", "gluon_news").send()),
