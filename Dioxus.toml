@@ -1,0 +1,74 @@
+[application]
+
+# dioxus project name
+name = "gluon_news"
+
+# default platfrom
+# you can also use `dx serve/build --platform XXX` to use other platform
+# value: web | desktop
+default_platform = "desktop"
+
+# Web `build` & `serve` dist path
+out_dir = "dist"
+
+# resource (static) file folder
+asset_dir = "public"
+
+[web.app]
+
+# HTML title tag content
+title = "A simple graphical news aggregator written in Rust."
+
+[web.watcher]
+
+index_on_404 = true
+
+watch_path = ["src"]
+
+# include `assets` in web platform
+[web.resource]
+
+# CSS style file
+style = ["style.css"]
+
+# Javascript code file
+script = []
+
+[web.resource.dev]
+
+# Javascript code file
+# serve: [dev-server] only
+script = []
+
+[application.plugins]
+
+available = true
+
+required = []
+
+[bundler]
+# Bundle identifier
+identifier = "io.github.gluon_news"
+
+# Bundle publisher
+publisher = "gluon_news"
+
+# Bundle icon
+icon = ["icons/icon.png"]
+
+# Bundle resources
+resources = ["public/*"]
+
+# Bundle copyright
+copyright = ""
+
+# Bundle category
+category = "News Aggregator"
+
+# Bundle short description
+short_description = "A simple graphical news aggregator written in Rust."
+
+# Bundle long description
+long_description = """
+A simple graphical news aggregator written in Rust.
+"""
