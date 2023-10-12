@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use chrono::{DateTime, Utc};
+use chrono_tz::Tz;
 use dioxus::prelude::*;
 use dioxus_desktop::{Config, WindowBuilder};
 use feed_rs::{
@@ -11,6 +12,7 @@ use futures::future::join_all;
 use lazy_static::lazy_static;
 use reqwest::{Client, Response};
 use serde::Deserialize;
+use std::str::FromStr;
 use std::{error::Error, fs::read_to_string, sync::Arc};
 
 lazy_static! {
@@ -21,6 +23,7 @@ lazy_static! {
 struct Settings {
     feeds: Vec<String>,
     maximized: bool,
+    time_zone: String,
 }
 
 impl Default for Settings {
@@ -28,6 +31,7 @@ impl Default for Settings {
         Self {
             feeds: vec!["https://github.com/vascocosta/gluon_news/commits.atom".to_owned()],
             maximized: true,
+            time_zone: "Europe/London".to_owned(),
         }
     }
 }
@@ -38,7 +42,7 @@ struct EntryProps {
     summary: String,
     link: String,
     category: String,
-    published: DateTime<Utc>,
+    published: DateTime<Tz>,
 }
 
 fn read_settings() -> Result<Settings, Box<dyn Error>> {
@@ -132,12 +136,12 @@ fn App(cx: Scope) -> Element {
             style { include_str!("../style.css") }
 
             match response {
-                Some(feeds) => rsx! {
+                Some(entries) => rsx! {
                     ul {
                         li {
                             button {onclick: move |_| {count += 1}, "Refresh"}
                         }
-                        for e in feeds {
+                        for e in entries {
                             li {
                                 Entry {
                                     title: match e.1.title.clone() {
@@ -145,7 +149,7 @@ fn App(cx: Scope) -> Element {
                                         None => String::from("N/A"),
                                     },
                                     summary: match e.1.summary.clone() {
-                                        Some(summary) => summary.content.replace("href", ""),
+                                        Some(summary) => summary.content,
                                         None => String::from("N/A"),
                                     },
                                     link: match e.1.links.get(0) {
@@ -153,7 +157,13 @@ fn App(cx: Scope) -> Element {
                                         None => String::from("N/A"),
                                     },
                                     category: e.0.chars().take(100).collect::<String>(),
-                                    published: e.1.published.unwrap_or_default(),
+                                    published: match e.1.published {
+                                        Some(published) => {
+                                            let time_zone = Tz::from_str(&SETTINGS.time_zone).unwrap_or(Tz::UTC);
+                                            published.with_timezone(&time_zone)
+                                        },
+                                        None => Utc::now().with_timezone(&Tz::UTC),
+                                    },
                                 }
                             }
                         }
